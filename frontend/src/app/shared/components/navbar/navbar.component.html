@@ -1,0 +1,32 @@
+<nav class="top-nav">
+  <div class="nav-left">
+    <!-- Hamburger button - solo visible en móvil -->
+    <button class="hamburger-btn" id="btn-toggle-sidebar" (click)="toggleSidebar.emit()" aria-label="Abrir menú">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-brand">
+      <div class="brand-icon">NW</div>
+      <div class="brand-text">
+        <span class="brand-name">NETWATCH<span class="brand-accent">PRO</span></span>
+        <span class="brand-sub">// SISTEMA DE MONITOREO</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-right">
+    <div class="status-indicator">
+      <span class="pulse-dot"></span>
+      <span class="status-text">EN LÍNEA</span>
+    </div>
+    <div class="user-info">
+      <div class="user-details">
+        <span class="user-name">{{ authService.usuario()?.nombre | uppercase }}</span>
+        <span class="user-role">[ {{ authService.usuario()?.rol | uppercase }} ]</span>
+      </div>
+      <button class="btn-logout" id="btn-cerrar-sesion" (click)="cerrarSesion()">SALIR</button>
+    </div>
+  </div>
+</nav>

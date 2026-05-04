@@ -1,0 +1,84 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <h1>CENTRO_DE_ALERTAS</h1>
+      <p class="subtitle">&gt; {{ total() }} alertas — Actualización automática en tiempo real</p>
+    </div>
+    <button class="btn-refresh" (click)="cargar()">⟳ ACTUALIZAR</button>
+  </div>
+
+  @if (mensajeExito()) { <div class="alert-success">✓ {{ mensajeExito() }}</div> }
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>NIVEL</label>
+      <select [(ngModel)]="filtroNivel" (change)="cargar()">
+        <option value="">Todos</option>
+        <option value="informacion">Información</option>
+        <option value="advertencia">Advertencia</option>
+        <option value="alto">Alto</option>
+        <option value="critico">Crítico</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>ESTADO</label>
+      <select [(ngModel)]="filtroReconocida" (change)="cargar()">
+        <option value="">Todos</option>
+        <option value="false">No reconocidas</option>
+        <option value="true">Reconocidas</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Alert Timeline -->
+  <div class="data-panel">
+    <div class="panel-header">
+      <span class="panel-title">TIMELINE_DE_EVENTOS</span>
+      <span class="panel-count">{{ total() }} eventos</span>
+    </div>
+    @if (cargando()) { <div class="loading-bar-thin"></div> }
+    <div class="alert-timeline">
+      @for (alerta of alertas(); track alerta._id) {
+        <div class="alert-row" [class.row-reconocida]="alerta.reconocida" [class]="'row-' + alerta.nivel">
+          <div class="alert-level-col">
+            <span class="level-badge" [class]="'lvl-' + alerta.nivel">{{ etiquetaNivel(alerta.nivel) }}</span>
+          </div>
+          <div class="alert-icon-col">
+            <div class="timeline-dot" [class]="'dot-' + alerta.nivel"></div>
+            <div class="timeline-line"></div>
+          </div>
+          <div class="alert-body-col">
+            <div class="alert-msg">{{ alerta.mensaje }}</div>
+            <div class="alert-meta">
+              <span class="meta-item">
+                <span class="meta-label">TIPO:</span> {{ etiquetaTipo(alerta.tipo_evento) }}
+              </span>
+              @if (alerta.dispositivo_id) {
+                <span class="meta-item">
+                  <span class="meta-label">NODO:</span> {{ alerta.dispositivo_id.nombre }}
+                </span>
+              }
+              @if (alerta.valor_detectado != null) {
+                <span class="meta-item">
+                  <span class="meta-label">VALOR:</span> {{ alerta.valor_detectado }}{{ alerta.nivel === 'advertencia' ? 'ms' : '' }}
+                </span>
+              }
+              <span class="meta-item">{{ tiempoTranscurrido(alerta.fecha_generacion) }}</span>
+            </div>
+          </div>
+          <div class="alert-actions-col">
+            @if (!alerta.reconocida) {
+              <button class="btn-ack" (click)="reconocer(alerta._id)">RECONOCER</button>
+            } @else {
+              <span class="ack-label">✓ Reconocida</span>
+            }
+          </div>
+        </div>
+      }
+      @empty {
+        <div class="empty-state"><p>Sin alertas registradas. Todo en orden. ✓</p></div>
+      }
+    </div>
+  </div>
+</div>

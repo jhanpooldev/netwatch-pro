@@ -1,0 +1,98 @@
+<div class="login-wrapper">
+  <!-- Animated grid lines -->
+  <div class="grid-bg"></div>
+  <div class="scanline"></div>
+
+  <div class="login-container">
+    <!-- Logo -->
+    <div class="logo-section">
+      <div class="logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+          <polygon points="24,4 44,14 44,34 24,44 4,34 4,14" stroke="#00ffcc" stroke-width="2" fill="none"/>
+          <circle cx="24" cy="24" r="6" fill="#00ffcc" opacity="0.8"/>
+          <line x1="24" y1="4" x2="24" y2="18" stroke="#00ffcc" stroke-width="1.5" opacity="0.5"/>
+          <line x1="24" y1="30" x2="24" y2="44" stroke="#00ffcc" stroke-width="1.5" opacity="0.5"/>
+          <line x1="4" y1="14" x2="18" y2="21" stroke="#00ffcc" stroke-width="1.5" opacity="0.5"/>
+          <line x1="30" y1="27" x2="44" y2="34" stroke="#00ffcc" stroke-width="1.5" opacity="0.5"/>
+          <line x1="44" y1="14" x2="30" y2="21" stroke="#00ffcc" stroke-width="1.5" opacity="0.5"/>
+          <line x1="18" y1="27" x2="4" y2="34" stroke="#00ffcc" stroke-width="1.5" opacity="0.5"/>
+        </svg>
+      </div>
+      <h1 class="logo-title">NETWATCH <span>PRO</span></h1>
+      <p class="logo-subtitle">// SISTEMA DE MONITOREO DE REDES</p>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card">
+      <div class="card-header-bar"></div>
+      <div class="card-body-inner">
+        <p class="access-label">&gt; ACCESO_AL_SISTEMA</p>
+
+        <!-- Error Alert -->
+        @if (error()) {
+          <div class="alert-error">
+            <span class="alert-icon">!</span>
+            {{ error() }}
+          </div>
+        }
+
+        <!-- Form -->
+        <div class="form-group-custom">
+          <label>CORREO ELECTRÓNICO</label>
+          <div class="input-wrapper">
+            <span class="input-icon">&#64;</span>
+            <input
+              type="email"
+              id="correo"
+              [(ngModel)]="correo"
+              placeholder="usuario@empresa.com"
+              autocomplete="email"
+              (keyup.enter)="iniciarSesion()"
+            />
+          </div>
+        </div>
+
+        <div class="form-group-custom">
+          <label>CONTRASEÑA</label>
+          <div class="input-wrapper">
+            <span class="input-icon">&#128274;</span>
+            <input
+              [type]="mostrarPassword ? 'text' : 'password'"
+              id="password"
+              [(ngModel)]="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              (keyup.enter)="iniciarSesion()"
+            />
+            <button class="toggle-pass" type="button" (click)="togglePassword()">
+              {{ mostrarPassword ? '&#128065;' : '&#128374;' }}
+            </button>
+          </div>
+        </div>
+
+        <button
+          class="btn-login"
+          id="btn-iniciar-sesion"
+          type="button"
+          [disabled]="cargando()"
+          (click)="iniciarSesion()">
+          @if (cargando()) {
+            <span class="loader-dot"></span>
+            <span class="loader-dot"></span>
+            <span class="loader-dot"></span>
+          } @else {
+            INICIAR SESIÓN
+          }
+        </button>
+
+        <!-- Hint -->
+        <div class="hint-box">
+          <p>&gt; Demo: admin&#64;netwatch.com / Admin1234!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="footer-text">NetWatch Pro v1.0.0 &nbsp;|&nbsp; Monitoreo 24/7</p>
+  </div>
+</div>

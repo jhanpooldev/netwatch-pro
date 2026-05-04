@@ -1,0 +1,113 @@
+<div class="dashboard">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1>VISTA_GENERAL</h1>
+      <p class="subtitle">&gt; Telemetría en tiempo real — Actualización automática vía WebSocket</p>
+    </div>
+    <button class="btn-refresh" (click)="cargarDatos()">⟳ ACTUALIZAR</button>
+  </div>
+
+  @if (cargando()) {
+    <div class="loading-state">
+      <div class="loading-bar"></div>
+      <p>Obteniendo datos del sistema...</p>
+    </div>
+  }
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-active">
+      <div class="kpi-top">
+        <span class="kpi-code">NODOS_ACTIVOS</span>
+        <span class="kpi-icon kpi-icon-active">▲</span>
+      </div>
+      <div class="kpi-value">{{ statsDispositivos().activos }}<span class="kpi-total">/{{ statsDispositivos().total }}</span></div>
+      <div class="kpi-bar"><div class="kpi-fill" [style.width.%]="statsDispositivos().total > 0 ? (statsDispositivos().activos / statsDispositivos().total) * 100 : 0"></div></div>
+    </div>
+    <div class="kpi-card kpi-offline">
+      <div class="kpi-top">
+        <span class="kpi-code">NODOS_CAÍDOS</span>
+        <span class="kpi-icon kpi-icon-offline">▼</span>
+      </div>
+      <div class="kpi-value">{{ statsDispositivos().inactivos }}</div>
+      <div class="kpi-sub">{{ statsDispositivos().degradados }} degradados</div>
+    </div>
+    <div class="kpi-card kpi-tickets">
+      <div class="kpi-top">
+        <span class="kpi-code">TICKETS_ABIERTOS</span>
+        <span class="kpi-icon kpi-icon-warn">!</span>
+      </div>
+      <div class="kpi-value">{{ statsIncidencias().abiertas }}</div>
+      <div class="kpi-sub">{{ statsIncidencias().en_progreso }} en progreso</div>
+    </div>
+    <div class="kpi-card kpi-critico">
+      <div class="kpi-top">
+        <span class="kpi-code">INCID_CRÍTICAS</span>
+        <span class="kpi-icon kpi-icon-critical">✕</span>
+      </div>
+      <div class="kpi-value">{{ statsIncidencias().criticas }}</div>
+      <div class="kpi-sub">Requieren atención inmediata</div>
+    </div>
+  </div>
+
+  <!-- Device Grid + Alerts -->
+  <div class="main-grid">
+    <!-- Device Map -->
+    <div class="panel panel-devices">
+      <div class="panel-header">
+        <span class="panel-title">MAPA_DE_NODOS</span>
+        <a routerLink="/dispositivos" class="panel-link">Ver todos →</a>
+      </div>
+      <div class="device-grid">
+        @if (dispositivos().length === 0) {
+          <div class="empty-state">
+            <p>Sin dispositivos registrados.</p>
+            <a routerLink="/configuracion" class="btn-link">+ Agregar dispositivo</a>
+          </div>
+        }
+        @for (dispositivo of dispositivos(); track dispositivo._id) {
+          <div class="device-card" [class]="'device-' + dispositivo.estado">
+            <div class="device-status-bar"></div>
+            <div class="device-body">
+              <div class="device-icon">{{ etiquetaTipo(dispositivo.tipo) }}</div>
+              <div class="device-info">
+                <div class="device-name">{{ dispositivo.nombre }}</div>
+                <div class="device-ip">{{ dispositivo.ip_address }}</div>
+              </div>
+              <div class="device-meta">
+                <div class="device-latency">{{ dispositivo.latencia_actual !== null ? dispositivo.latencia_actual + 'ms' : '—' }}</div>
+                <div class="device-badge" [class]="'badge-' + dispositivo.estado">{{ etiquetaEstado(dispositivo.estado) }}</div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="panel panel-alerts">
+      <div class="panel-header">
+        <span class="panel-title">ALERTAS_RECIENTES</span>
+        <a routerLink="/alertas" class="panel-link">Ver todas →</a>
+      </div>
+      <div class="alert-list">
+        @if (alertasRecientes().length === 0) {
+          <div class="empty-state">
+            <p>Sin alertas recientes. ✓</p>
+          </div>
+        }
+        @for (alerta of alertasRecientes(); track alerta._id) {
+          <div class="alert-item" [class]="'alert-' + alerta.nivel">
+            <div class="alert-level">{{ etiquetaNivelAlerta(alerta.nivel) }}</div>
+            <div class="alert-content">
+              <div class="alert-msg">{{ alerta.mensaje }}</div>
+              <div class="alert-time">{{ tiempoTranscurrido(alerta.fecha_generacion) }}</div>
+            </div>
+            <div class="alert-dot" [class]="!alerta.reconocida ? 'dot-active' : ''"></div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

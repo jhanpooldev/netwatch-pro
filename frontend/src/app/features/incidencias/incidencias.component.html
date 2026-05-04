@@ -1,0 +1,148 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <h1>GESTIÓN_DE_INCIDENCIAS</h1>
+      <p class="subtitle">&gt; {{ total() }} incidencias registradas</p>
+    </div>
+    <button class="btn-primary-action" id="btn-nueva-incidencia" (click)="abrirNuevo()">+ NUEVA INCIDENCIA</button>
+  </div>
+
+  @if (mensajeExito()) { <div class="alert-success">✓ {{ mensajeExito() }}</div> }
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>ESTADO</label>
+      <select [(ngModel)]="filtroEstado" (change)="paginaActual=1; cargar()">
+        <option value="">Todos</option>
+        <option value="abierta">Abierta</option>
+        <option value="en_progreso">En Progreso</option>
+        <option value="resuelta">Resuelta</option>
+        <option value="cerrada">Cerrada</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>PRIORIDAD</label>
+      <select [(ngModel)]="filtroPrioridad" (change)="paginaActual=1; cargar()">
+        <option value="">Todas</option>
+        <option value="baja">Baja</option>
+        <option value="media">Media</option>
+        <option value="alta">Alta</option>
+        <option value="critica">Crítica</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="data-panel">
+    <div class="panel-header">
+      <span class="panel-title">LISTADO_DE_TICKETS</span>
+      <span class="panel-count">{{ total() }} registros</span>
+    </div>
+    @if (cargando()) { <div class="loading-bar-thin"></div> }
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>TÍTULO</th>
+            <th>DISPOSITIVO</th>
+            <th>PRIORIDAD</th>
+            <th>ESTADO</th>
+            <th>APERTURA</th>
+            <th>ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of incidencias(); track i._id) {
+            <tr>
+              <td class="td-primary">{{ i.titulo }}</td>
+              <td class="td-secondary">{{ i.dispositivo_id?.nombre || '—' }}</td>
+              <td><span class="priority-badge" [class]="'pri-' + i.prioridad">{{ etiquetaPrioridad(i.prioridad) }}</span></td>
+              <td><span class="status-badge" [class]="'est-' + i.estado">{{ etiquetaEstado(i.estado) }}</span></td>
+              <td class="td-mono td-secondary">{{ i.fecha_apertura | date: 'dd/MM/yy HH:mm' }}</td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-edit" (click)="abrirEditar(i)">EDITAR</button>
+                  <button class="btn-delete" (click)="eliminar(i._id)">ELIMINAR</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr><td colspan="6" class="empty-row">Sin incidencias registradas.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPaginas > 1) {
+      <div class="pagination">
+        <button [disabled]="paginaActual <= 1" (click)="paginaAnterior()">‹ ANTERIOR</button>
+        <span>Página {{ paginaActual }} de {{ totalPaginas }}</span>
+        <button [disabled]="paginaActual >= totalPaginas" (click)="paginaSiguiente()">SIGUIENTE ›</button>
+      </div>
+    }
+  </div>
+
+  <!-- Modal -->
+  @if (mostrarModal()) {
+    <div class="modal-overlay" (click)="cerrarModal()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-header-bar"></div>
+        <div class="modal-content">
+          <h3>{{ modoEdicion() ? 'EDITAR_INCIDENCIA' : 'NUEVA_INCIDENCIA' }}</h3>
+          @if (mensajeError()) { <div class="alert-error-sm">{{ mensajeError() }}</div> }
+          <div class="fg">
+            <label>TÍTULO *</label>
+            <input type="text" [(ngModel)]="form.titulo" placeholder="Descripción breve del problema" maxlength="100" />
+          </div>
+          <div class="fg">
+            <label>DESCRIPCIÓN DETALLADA *</label>
+            <textarea [(ngModel)]="form.descripcion" rows="4" placeholder="Describe el problema con detalle..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="fg">
+              <label>DISPOSITIVO AFECTADO</label>
+              <select [(ngModel)]="form.dispositivo_id">
+                <option value="">— Seleccionar —</option>
+                @for (d of dispositivos(); track d._id) {
+                  <option [value]="d._id">{{ d.nombre }} ({{ d.ip_address }})</option>
+                }
+              </select>
+            </div>
+            <div class="fg">
+              <label>PRIORIDAD</label>
+              <select [(ngModel)]="form.prioridad">
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="critica">Crítica</option>
+              </select>
+            </div>
+          </div>
+          @if (modoEdicion()) {
+            <div class="form-row">
+              <div class="fg">
+                <label>ESTADO</label>
+                <select [(ngModel)]="form.estado">
+                  <option value="abierta">Abierta</option>
+                  <option value="en_progreso">En Progreso</option>
+                  <option value="resuelta">Resuelta</option>
+                  <option value="cerrada">Cerrada</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>COMENTARIO</label>
+                <input type="text" [(ngModel)]="form.comentario" placeholder="Motivo del cambio..." />
+              </div>
+            </div>
+          }
+          <div class="modal-actions">
+            <button class="btn-cancel" (click)="cerrarModal()">CANCELAR</button>
+            <button class="btn-save" (click)="guardar()">{{ modoEdicion() ? 'ACTUALIZAR' : 'CREAR' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

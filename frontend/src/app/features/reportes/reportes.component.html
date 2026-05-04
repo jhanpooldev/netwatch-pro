@@ -1,0 +1,133 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <h1>REPORTES_Y_ESTADÍSTICAS</h1>
+      <p class="subtitle">&gt; Resumen del estado operacional de la red</p>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="loading-state"><div class="loading-bar"></div><p>Calculando métricas...</p></div>
+  }
+
+  @if (statsDispositivos() && statsIncidencias()) {
+    <!-- Uptime & Resolucion -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">DISPONIBILIDAD GENERAL</div>
+        <div class="stat-gauge">
+          <svg viewBox="0 0 100 60" class="gauge-svg">
+            <path d="M 10 55 A 40 40 0 0 1 90 55" stroke="#333" stroke-width="8" fill="none"/>
+            <path d="M 10 55 A 40 40 0 0 1 90 55"
+              stroke="var(--accent-cyan)" stroke-width="8" fill="none"
+              stroke-dasharray="125"
+              [attr.stroke-dashoffset]="125 - (125 * uptimePorcentaje() / 100)"
+              style="transition: stroke-dashoffset 1s ease;"/>
+          </svg>
+          <div class="gauge-value">{{ uptimePorcentaje() }}<span>%</span></div>
+        </div>
+        <div class="stat-sub">{{ statsDispositivos().activos }}/{{ statsDispositivos().total }} nodos activos</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">TASA DE RESOLUCIÓN</div>
+        <div class="stat-gauge">
+          <svg viewBox="0 0 100 60" class="gauge-svg">
+            <path d="M 10 55 A 40 40 0 0 1 90 55" stroke="#333" stroke-width="8" fill="none"/>
+            <path d="M 10 55 A 40 40 0 0 1 90 55"
+              stroke="#4ade80" stroke-width="8" fill="none"
+              stroke-dasharray="125"
+              [attr.stroke-dashoffset]="125 - (125 * tasaResolucion() / 100)"
+              style="transition: stroke-dashoffset 1s ease;"/>
+          </svg>
+          <div class="gauge-value">{{ tasaResolucion() }}<span>%</span></div>
+        </div>
+        <div class="stat-sub">{{ statsIncidencias().resueltas }}/{{ statsIncidencias().total }} incidencias resueltas</div>
+      </div>
+    </div>
+
+    <!-- Incidencias Detail -->
+    <div class="data-panel">
+      <div class="panel-header">
+        <span class="panel-title">DESGLOSE_INCIDENCIAS</span>
+      </div>
+      <div class="stats-rows">
+        <div class="stat-row">
+          <span>Total de incidencias</span>
+          <span class="stat-val">{{ statsIncidencias().total }}</span>
+        </div>
+        <div class="stat-row">
+          <span>Abiertas</span>
+          <div class="stat-right">
+            <div class="mini-bar">
+              <div class="mini-fill" [style.width.%]="statsIncidencias().total > 0 ? (statsIncidencias().abiertas / statsIncidencias().total) * 100 : 0" style="background: var(--accent-cyan);"></div>
+            </div>
+            <span class="stat-val cyan">{{ statsIncidencias().abiertas }}</span>
+          </div>
+        </div>
+        <div class="stat-row">
+          <span>En Progreso</span>
+          <div class="stat-right">
+            <div class="mini-bar">
+              <div class="mini-fill" [style.width.%]="statsIncidencias().total > 0 ? (statsIncidencias().en_progreso / statsIncidencias().total) * 100 : 0" style="background: var(--accent-amber);"></div>
+            </div>
+            <span class="stat-val amber">{{ statsIncidencias().en_progreso }}</span>
+          </div>
+        </div>
+        <div class="stat-row">
+          <span>Resueltas</span>
+          <div class="stat-right">
+            <div class="mini-bar">
+              <div class="mini-fill" [style.width.%]="statsIncidencias().total > 0 ? (statsIncidencias().resueltas / statsIncidencias().total) * 100 : 0" style="background: #4ade80;"></div>
+            </div>
+            <span class="stat-val green">{{ statsIncidencias().resueltas }}</span>
+          </div>
+        </div>
+        <div class="stat-row">
+          <span>Incidencias Críticas Pendientes</span>
+          <span class="stat-val crimson">{{ statsIncidencias().criticas }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dispositivos -->
+    <div class="data-panel">
+      <div class="panel-header">
+        <span class="panel-title">DESGLOSE_DISPOSITIVOS</span>
+      </div>
+      <div class="stats-rows">
+        <div class="stat-row">
+          <span>Total de nodos</span>
+          <span class="stat-val">{{ statsDispositivos().total }}</span>
+        </div>
+        <div class="stat-row">
+          <span>Activos</span>
+          <div class="stat-right">
+            <div class="mini-bar">
+              <div class="mini-fill" [style.width.%]="statsDispositivos().total > 0 ? (statsDispositivos().activos / statsDispositivos().total) * 100 : 0" style="background: var(--accent-cyan);"></div>
+            </div>
+            <span class="stat-val cyan">{{ statsDispositivos().activos }}</span>
+          </div>
+        </div>
+        <div class="stat-row">
+          <span>Degradados</span>
+          <div class="stat-right">
+            <div class="mini-bar">
+              <div class="mini-fill" [style.width.%]="statsDispositivos().total > 0 ? (statsDispositivos().degradados / statsDispositivos().total) * 100 : 0" style="background: var(--accent-amber);"></div>
+            </div>
+            <span class="stat-val amber">{{ statsDispositivos().degradados }}</span>
+          </div>
+        </div>
+        <div class="stat-row">
+          <span>Inactivos / Caídos</span>
+          <div class="stat-right">
+            <div class="mini-bar">
+              <div class="mini-fill" [style.width.%]="statsDispositivos().total > 0 ? (statsDispositivos().inactivos / statsDispositivos().total) * 100 : 0" style="background: var(--accent-crimson);"></div>
+            </div>
+            <span class="stat-val crimson">{{ statsDispositivos().inactivos }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

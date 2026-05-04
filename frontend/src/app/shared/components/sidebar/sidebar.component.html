@@ -1,0 +1,26 @@
+<aside class="sidebar">
+  <div class="module-label">/// MÓDULOS</div>
+  <nav class="sidebar-nav">
+    @for (item of menuItems; track item.ruta) {
+      <a
+        [routerLink]="item.ruta"
+        routerLinkActive="active"
+        class="nav-item"
+        [id]="'nav-' + item.codigo.toLowerCase()"
+        (click)="linkClicked.emit()">
+        <span class="item-code">[{{ item.codigo }}]</span>
+        <div class="item-text">
+          <span class="item-label">{{ item.etiqueta }}</span>
+          <span class="item-desc">{{ item.descripcion }}</span>
+        </div>
+      </a>
+    }
+  </nav>
+
+  <div class="sys-status">
+    <div class="status-line">SYS &nbsp;&nbsp;: <span class="ok">NOMINAL</span></div>
+    <div class="status-line">API &nbsp;&nbsp;: <span class="ok">ONLINE</span></div>
+    <div class="status-line">DB &nbsp;&nbsp;&nbsp;: <span class="ok">CONNECTED</span></div>
+    <div class="status-line">WS &nbsp;&nbsp;&nbsp;: <span class="ok">ACTIVE</span></div>
+  </div>
+</aside>
