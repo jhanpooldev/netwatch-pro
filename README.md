@@ -7,27 +7,28 @@ Sistema web de monitoreo de redes informáticas en tiempo real.
 | Capa | Tecnología |
 |------|-----------|
 | Frontend | Angular 17 + Bootstrap 5 + SCSS |
-| Backend | Node.js + Express.js |
-| Base de datos | MongoDB (Mongoose ODM) |
-| Tiempo real | Socket.IO (WebSockets) |
-| Autenticación | JWT + bcrypt |
-| Monitoreo | ICMP Ping (`ping` npm) |
+| Backend | Python (FastAPI + Uvicorn) |
+| Base de datos | MongoDB (PyMongo) |
+| Tiempo real | Socket.IO (python-socketio) |
+| Autenticación | JWT (PyJWT) + bcrypt |
+| Monitoreo | ICMP Ping (Subprocess native) |
 
 ## 🚀 Instalación y Ejecución
 
 ### Requisitos previos
-- Node.js v18+
+- Python 3.10+
+- Node.js v18+ (para el frontend)
 - MongoDB corriendo localmente en `localhost:27017`
 
-### Backend
+### Backend (Python)
 ```bash
 cd backend
-npm install
-# Crear archivo .env con:
+pip install -r requirements.txt
+# Asegúrate de configurar el archivo .env con:
 # PORT=3000
 # MONGODB_URI=mongodb://127.0.0.1:27017/redes
-# JWT_SECRET=tu_secreto_aqui
-npm start
+# JWT_SECRET=supersecretdarkindustrialnetwatch
+python main.py
 ```
 
 ### Frontend

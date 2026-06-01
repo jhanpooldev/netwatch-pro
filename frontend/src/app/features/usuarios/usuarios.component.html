@@ -1,0 +1,157 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <h1>GESTIÓN_DE_USUARIOS</h1>
+      <p class="subtitle">&gt; Administración de cuentas y roles del sistema</p>
+    </div>
+    <button class="btn-primary-action" id="btn-nuevo-usuario" (click)="abrirNuevo()">
+      + NUEVO USUARIO
+    </button>
+  </div>
+
+  @if (mensajeExito()) {
+    <div class="alert-success">✓ {{ mensajeExito() }}</div>
+  }
+  @if (mensajeError() && !mostrarModal()) {
+    <div class="alert-error-sm">⚠ {{ mensajeError() }}</div>
+  }
+
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-mini">
+      <span class="stat-num">{{ usuarios().length }}</span>
+      <span class="stat-label">TOTAL</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-num cyan">{{ countActivos() }}</span>
+      <span class="stat-label">ACTIVOS</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-num amber">{{ countByRol('admin') }}</span>
+      <span class="stat-label">ADMINS</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-num">{{ countByRol('tecnico') }}</span>
+      <span class="stat-label">TÉCNICOS</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-num">{{ countByRol('observador') }}</span>
+      <span class="stat-label">OBSERVADORES</span>
+    </div>
+  </div>
+
+  <div class="data-panel">
+    <div class="panel-header">
+      <span class="panel-title">DIRECTORIO_DE_USUARIOS</span>
+      <span class="panel-count">{{ usuarios().length }} registros</span>
+    </div>
+    @if (cargando()) { <div class="loading-bar-thin"></div> }
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>USUARIO</th>
+            <th>CORREO</th>
+            <th>ROL</th>
+            <th>ESTADO</th>
+            <th>ÚLTIMO ACCESO</th>
+            <th>ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuarios(); track u._id) {
+            <tr [class.row-inactive]="!u.activo">
+              <td class="td-user">
+                <div class="avatar" [class]="'avatar-' + u.rol">{{ u.nombre.charAt(0).toUpperCase() }}</div>
+                <span class="td-primary">{{ u.nombre }}</span>
+                @if (esYo(u)) { <span class="badge-yo">TÚ</span> }
+              </td>
+              <td><span class="code-tag">{{ u.correo }}</span></td>
+              <td><span class="role-badge" [class]="'role-' + u.rol">{{ etiquetaRol(u.rol) }}</span></td>
+              <td>
+                <span class="status-badge" [class]="u.activo ? 'badge-activo' : 'badge-inactivo'">
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="td-mono td-secondary">
+                {{ u.ultimo_acceso ? (u.ultimo_acceso | date:'dd/MM/yy HH:mm') : 'Nunca' }}
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-edit" (click)="abrirEditar(u)">EDITAR</button>
+                  @if (!esYo(u)) {
+                    <button class="btn-toggle" [class.btn-deactivate]="u.activo" [class.btn-activate]="!u.activo"
+                      (click)="toggleEstado(u)">
+                      {{ u.activo ? 'DESACTIVAR' : 'ACTIVAR' }}
+                    </button>
+                    <button class="btn-delete" (click)="eliminar(u)">ELIMINAR</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr><td colspan="6" class="empty-row">Sin usuarios registrados.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  @if (mostrarModal()) {
+    <div class="modal-overlay" (click)="cerrarModal()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-header-bar"></div>
+        <div class="modal-content">
+          <h3>{{ modoEdicion() ? 'EDITAR_USUARIO' : 'NUEVO_USUARIO' }}</h3>
+          @if (mensajeError()) { <div class="alert-error-sm">{{ mensajeError() }}</div> }
+          <div class="form-row">
+            <div class="fg">
+              <label>NOMBRE COMPLETO *</label>
+              <input type="text" [(ngModel)]="form.nombre" placeholder="Ej: Juan Pérez" id="inp-nombre-usuario" />
+            </div>
+            <div class="fg">
+              <label>CORREO ELECTRÓNICO *</label>
+              <input type="email" [(ngModel)]="form.correo" placeholder="usuario@empresa.com" id="inp-correo-usuario" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="fg">
+              <label>ROL DEL SISTEMA</label>
+              <select [(ngModel)]="form.rol" id="sel-rol-usuario">
+                <option value="admin">Administrador</option>
+                <option value="tecnico">Técnico</option>
+                <option value="observador">Observador</option>
+              </select>
+              <small class="field-hint">
+                Admin: control total · Técnico: gestión operativa · Observador: solo lectura
+              </small>
+            </div>
+            <div class="fg">
+              <label>ESTADO</label>
+              <select [(ngModel)]="form.activo" id="sel-activo-usuario">
+                <option [ngValue]="true">Activo</option>
+                <option [ngValue]="false">Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label>{{ modoEdicion() ? 'NUEVA CONTRASEÑA (dejar en blanco para no cambiar)' : 'CONTRASEÑA *' }}</label>
+            <div class="input-password">
+              <input [type]="mostrarPassword() ? 'text' : 'password'" [(ngModel)]="form.password"
+                placeholder="{{ modoEdicion() ? '••••••••' : 'Mínimo 8 caracteres' }}" id="inp-password-usuario" />
+              <button type="button" class="btn-eye" (click)="mostrarPassword.set(!mostrarPassword())">
+                {{ mostrarPassword() ? '◎' : '○' }}
+              </button>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-cancel" (click)="cerrarModal()">CANCELAR</button>
+            <button class="btn-save" (click)="guardar()">{{ modoEdicion() ? 'ACTUALIZAR' : 'CREAR' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

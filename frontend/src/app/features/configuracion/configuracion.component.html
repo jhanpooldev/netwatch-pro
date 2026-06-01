@@ -1,0 +1,305 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <h1>CONFIGURACIÓN_DEL_SISTEMA</h1>
+      <p class="subtitle">&gt; Ajustes generales de NetWatch Pro</p>
+    </div>
+  </div>
+
+  @if (mensajeExito()) {
+    <div class="alert-success">✓ {{ mensajeExito() }}</div>
+  }
+  @if (mensajeError()) {
+    <div class="alert-error-sm">⚠ {{ mensajeError() }}</div>
+  }
+
+  <!-- TAB NAV -->
+  <div class="tab-nav">
+    <button class="tab-btn" [class.active]="tabActiva() === 'inicio'" (click)="irTab('inicio')">
+      <span class="tab-icon">◈</span> INICIO
+    </button>
+    <button class="tab-btn" [class.active]="tabActiva() === 'umbrales'" (click)="irTab('umbrales')">
+      <span class="tab-icon">⊕</span> UMBRALES
+    </button>
+    <button class="tab-btn" [class.active]="tabActiva() === 'smtp'" (click)="irTab('smtp')">
+      <span class="tab-icon">▣</span> NOTIFICACIONES
+    </button>
+  </div>
+
+  <!-- ═══════════ TAB: INICIO ═══════════ -->
+  @if (tabActiva() === 'inicio') {
+    <div class="config-grid">
+      <a routerLink="/dispositivos" class="config-card">
+        <div class="config-icon">◈</div>
+        <div class="config-body">
+          <div class="config-title">GESTIÓN DE DISPOSITIVOS</div>
+          <div class="config-desc">Agregar, editar y eliminar nodos monitoreados. Configurar IPs e intervalos de ping.</div>
+        </div>
+        <div class="config-arrow">→</div>
+      </a>
+
+      <a routerLink="/usuarios" class="config-card">
+        <div class="config-icon">⊞</div>
+        <div class="config-body">
+          <div class="config-title">GESTIÓN DE USUARIOS</div>
+          <div class="config-desc">Crear usuarios, asignar roles (Admin, Técnico, Observador) y gestionar accesos.</div>
+        </div>
+        <div class="config-arrow">→</div>
+      </a>
+
+      <div class="config-card clickable" (click)="irTab('umbrales')">
+        <div class="config-icon">⊕</div>
+        <div class="config-body">
+          <div class="config-title">UMBRALES DE ALERTA</div>
+          <div class="config-desc">Definir latencia máxima, porcentaje de pérdida de paquetes y canales de notificación.</div>
+        </div>
+        <div class="config-arrow">→</div>
+      </div>
+
+      <div class="config-card clickable" (click)="irTab('smtp')">
+        <div class="config-icon">▣</div>
+        <div class="config-body">
+          <div class="config-title">NOTIFICACIONES</div>
+          <div class="config-desc">Configurar correo SMTP, destinatarios de alertas críticas y plantillas de email.</div>
+        </div>
+        <div class="config-arrow">→</div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════ TAB: UMBRALES ═══════════ -->
+  @if (tabActiva() === 'umbrales') {
+    <div class="config-section">
+      <div class="section-intro">
+        <div class="section-icon">⊕</div>
+        <div>
+          <div class="section-title">UMBRALES DE ALERTA</div>
+          <div class="section-desc">
+            Define cuándo el motor de monitoreo considera que un dispositivo está degradado o en alerta.
+            Los cambios se aplican en el próximo ciclo de verificación.
+          </div>
+        </div>
+      </div>
+
+      @if (cargandoUmbrales()) { <div class="loading-bar-thin"></div> }
+
+      @if (!esAdmin()) {
+        <div class="notice-readonly">
+          <span>◈</span> Solo los administradores pueden modificar esta configuración. Estás en modo lectura.
+        </div>
+      }
+
+      <div class="settings-panel">
+        <!-- Latencia máxima -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">LATENCIA MÁXIMA</div>
+            <div class="setting-desc">Si la latencia de ping supera este valor, el dispositivo pasa a estado "Degradado" y genera una alerta de advertencia.</div>
+          </div>
+          <div class="setting-control">
+            <div class="input-unit-wrap">
+              <input type="number" [(ngModel)]="umbrales.latencia_maxima_ms"
+                [disabled]="!esAdmin()" min="1" max="10000" id="inp-latencia-max" />
+              <span class="unit-label">ms</span>
+            </div>
+            <div class="range-hint">Rango: 1 – 10000 ms · Recomendado: 200</div>
+          </div>
+        </div>
+
+        <div class="setting-divider"></div>
+
+        <!-- Pérdida de paquetes -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">PÉRDIDA DE PAQUETES</div>
+            <div class="setting-desc">Porcentaje de paquetes perdidos que activa una alerta crítica. (Funcionalidad en expansión — actualmente el motor usa ping único por ciclo).</div>
+          </div>
+          <div class="setting-control">
+            <div class="input-unit-wrap">
+              <input type="number" [(ngModel)]="umbrales.perdida_paquetes_pct"
+                [disabled]="!esAdmin()" min="0" max="100" step="5" id="inp-perdida-pct" />
+              <span class="unit-label">%</span>
+            </div>
+            <div class="range-hint">Rango: 0 – 100 % · Recomendado: 10</div>
+          </div>
+        </div>
+
+        <div class="setting-divider"></div>
+
+        <!-- Intervalo ping por defecto -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">INTERVALO DE PING POR DEFECTO</div>
+            <div class="setting-desc">Frecuencia de verificación predeterminada para nuevos dispositivos. Los dispositivos existentes mantienen su propio intervalo configurado.</div>
+          </div>
+          <div class="setting-control">
+            <div class="input-unit-wrap">
+              <input type="number" [(ngModel)]="umbrales.intervalo_ping_defecto"
+                [disabled]="!esAdmin()" min="5" max="3600" id="inp-intervalo-ping" />
+              <span class="unit-label">seg</span>
+            </div>
+            <div class="range-hint">Rango: 5 – 3600 s · Recomendado: 60</div>
+          </div>
+        </div>
+
+        <div class="setting-divider"></div>
+
+        <!-- Alerta recuperación -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-name">ALERTA DE RECUPERACIÓN</div>
+            <div class="setting-desc">Genera una alerta informativa cuando un dispositivo previamente caído vuelve a responder.</div>
+          </div>
+          <div class="setting-control">
+            <label class="toggle-switch" [class.disabled]="!esAdmin()">
+              <input type="checkbox" [(ngModel)]="umbrales.alerta_recuperacion"
+                [disabled]="!esAdmin()" id="chk-alerta-recuperacion" />
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="range-hint">{{ umbrales.alerta_recuperacion ? 'Habilitado' : 'Deshabilitado' }}</div>
+          </div>
+        </div>
+      </div>
+
+      @if (esAdmin()) {
+        <div class="form-actions">
+          <button class="btn-save-big" [disabled]="cargando()" (click)="guardarUmbrales()" id="btn-guardar-umbrales">
+            {{ cargando() ? 'GUARDANDO...' : 'GUARDAR UMBRALES' }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══════════ TAB: SMTP ═══════════ -->
+  @if (tabActiva() === 'smtp') {
+    <div class="config-section">
+      <div class="section-intro">
+        <div class="section-icon">▣</div>
+        <div>
+          <div class="section-title">NOTIFICACIONES POR EMAIL</div>
+          <div class="section-desc">
+            Configura el servidor SMTP para enviar alertas automáticas por correo electrónico cuando se detecten incidentes críticos en la red.
+          </div>
+        </div>
+      </div>
+
+      @if (cargandoSmtp()) { <div class="loading-bar-thin"></div> }
+
+      @if (!esAdmin()) {
+        <div class="notice-readonly">
+          <span>◈</span> Solo los administradores pueden modificar esta configuración.
+        </div>
+      }
+
+      <div class="settings-panel">
+        <!-- Servidor -->
+        <div class="smtp-group">
+          <div class="smtp-group-label">SERVIDOR SMTP</div>
+          <div class="form-row">
+            <div class="fg">
+              <label>HOST</label>
+              <input type="text" [(ngModel)]="smtp.smtp_host" [disabled]="!esAdmin()"
+                placeholder="smtp.gmail.com" id="inp-smtp-host" />
+            </div>
+            <div class="fg">
+              <label>PUERTO</label>
+              <input type="number" [(ngModel)]="smtp.smtp_port" [disabled]="!esAdmin()"
+                placeholder="587" id="inp-smtp-port" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="fg">
+              <label>USUARIO / EMAIL REMITENTE</label>
+              <input type="email" [(ngModel)]="smtp.smtp_usuario" [disabled]="!esAdmin()"
+                placeholder="alertas@empresa.com" id="inp-smtp-user" />
+            </div>
+            <div class="fg">
+              <label>CONTRASEÑA / APP PASSWORD</label>
+              <input type="password" [(ngModel)]="smtp.smtp_password" [disabled]="!esAdmin()"
+                placeholder="••••••••" id="inp-smtp-pass" />
+            </div>
+          </div>
+          <div class="toggle-row">
+            <label class="toggle-switch" [class.disabled]="!esAdmin()">
+              <input type="checkbox" [(ngModel)]="smtp.smtp_tls" [disabled]="!esAdmin()" id="chk-smtp-tls" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Usar STARTTLS (recomendado para puerto 587)</span>
+          </div>
+        </div>
+
+        <div class="setting-divider"></div>
+
+        <!-- Destinatarios -->
+        <div class="smtp-group">
+          <div class="smtp-group-label">DESTINATARIOS DE ALERTAS</div>
+          <div class="dest-list">
+            @for (dest of smtp.destinatarios || []; track dest) {
+              <div class="dest-chip">
+                <span>{{ dest }}</span>
+                @if (esAdmin()) {
+                  <button class="chip-remove" (click)="quitarDestinatario(dest)">×</button>
+                }
+              </div>
+            }
+            @empty {
+              <span class="empty-dest">No hay destinatarios configurados.</span>
+            }
+          </div>
+          @if (esAdmin()) {
+            <div class="dest-add">
+              <input type="email" [(ngModel)]="nuevoDestinatario" placeholder="nuevo@destinatario.com"
+                (keyup.enter)="agregarDestinatario()" id="inp-nuevo-destinatario" />
+              <button class="btn-add-dest" (click)="agregarDestinatario()">+ AGREGAR</button>
+            </div>
+          }
+        </div>
+
+        <div class="setting-divider"></div>
+
+        <!-- Qué notificar -->
+        <div class="smtp-group">
+          <div class="smtp-group-label">QUÉ NOTIFICAR</div>
+          <div class="notif-options">
+            <label class="notif-option">
+              <input type="checkbox" [(ngModel)]="smtp.notificar_critico" [disabled]="!esAdmin()" id="chk-notif-critico" />
+              <div class="notif-info">
+                <span class="notif-title">Alertas Críticas</span>
+                <span class="notif-desc">Dispositivos caídos, sin respuesta al ping</span>
+              </div>
+              <span class="notif-badge critico">CRÍTICO</span>
+            </label>
+            <label class="notif-option">
+              <input type="checkbox" [(ngModel)]="smtp.notificar_advertencia" [disabled]="!esAdmin()" id="chk-notif-advert" />
+              <div class="notif-info">
+                <span class="notif-title">Advertencias</span>
+                <span class="notif-desc">Latencia alta, degradación del servicio</span>
+              </div>
+              <span class="notif-badge advertencia">ADVERTENCIA</span>
+            </label>
+            <label class="notif-option">
+              <input type="checkbox" [(ngModel)]="smtp.notificar_recuperacion" [disabled]="!esAdmin()" id="chk-notif-recup" />
+              <div class="notif-info">
+                <span class="notif-title">Recuperaciones</span>
+                <span class="notif-desc">Dispositivos que vuelven a estar en línea</span>
+              </div>
+              <span class="notif-badge recuperacion">INFO</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      @if (esAdmin()) {
+        <div class="form-actions">
+          <button class="btn-test" [disabled]="enviandoPrueba()" (click)="probarSmtp()" id="btn-probar-smtp">
+            {{ enviandoPrueba() ? 'ENVIANDO...' : '✉ ENVIAR EMAIL DE PRUEBA' }}
+          </button>
+          <button class="btn-save-big" [disabled]="cargando()" (click)="guardarSmtp()" id="btn-guardar-smtp">
+            {{ cargando() ? 'GUARDANDO...' : 'GUARDAR CONFIGURACIÓN' }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,82 +1,148 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ConfiguracionService } from '../../core/services/configuracion.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Umbrales, SmtpConfig } from '../../core/models/configuracion.model';
+
+type Tab = 'inicio' | 'umbrales' | 'smtp';
 
 @Component({
   selector: 'app-configuracion',
   standalone: true,
-  imports: [CommonModule, RouterLink],
-  template: `
-    <div class="module-page">
-      <div class="page-header">
-        <div>
-          <h1>CONFIGURACIÓN_DEL_SISTEMA</h1>
-          <p class="subtitle">&gt; Ajustes generales de NetWatch Pro</p>
-        </div>
-      </div>
-      <div class="config-grid">
-        <a routerLink="/dispositivos" class="config-card">
-          <div class="config-icon">◈</div>
-          <div class="config-body">
-            <div class="config-title">GESTIÓN DE DISPOSITIVOS</div>
-            <div class="config-desc">Agregar, editar y eliminar nodos monitoreados. Configurar IPs e intervalos de ping.</div>
-          </div>
-          <div class="config-arrow">→</div>
-        </a>
-        <div class="config-card coming-soon">
-          <div class="config-icon">⊞</div>
-          <div class="config-body">
-            <div class="config-title">GESTIÓN DE USUARIOS</div>
-            <div class="config-desc">Crear usuarios, asignar roles (Admin, Técnico, Observador) y gestionar accesos.</div>
-          </div>
-          <div class="badge-soon">PRÓXIMAMENTE</div>
-        </div>
-        <div class="config-card coming-soon">
-          <div class="config-icon">⊕</div>
-          <div class="config-body">
-            <div class="config-title">UMBRALES DE ALERTA</div>
-            <div class="config-desc">Definir latencia máxima, porcentaje de pérdida de paquetes y canales de notificación.</div>
-          </div>
-          <div class="badge-soon">PRÓXIMAMENTE</div>
-        </div>
-        <div class="config-card coming-soon">
-          <div class="config-icon">▣</div>
-          <div class="config-body">
-            <div class="config-title">NOTIFICACIONES</div>
-            <div class="config-desc">Configurar correo SMTP, destinatarios de alertas críticas y plantillas de email.</div>
-          </div>
-          <div class="badge-soon">PRÓXIMAMENTE</div>
-        </div>
-      </div>
-    </div>
-  `,
-  styles: [`
-    @use '../dispositivos/dispositivos.component.scss' as *;
-
-    .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
-
-    .config-card {
-      display: flex; align-items: center; gap: 1.25rem;
-      background: var(--bg-panel); border: 1px solid var(--border-color);
-      padding: 1.5rem; text-decoration: none;
-      transition: all 0.2s; cursor: pointer;
-
-      &:not(.coming-soon):hover {
-        border-color: var(--accent-cyan);
-        background: rgba(0, 255, 204, 0.03);
-        .config-arrow { color: var(--accent-cyan); }
-        .config-icon { color: var(--accent-cyan); }
-      }
-
-      &.coming-soon { opacity: 0.5; cursor: default; }
-    }
-
-    .config-icon { font-size: 1.5rem; color: var(--text-secondary); flex-shrink: 0; }
-    .config-body { flex: 1; }
-    .config-title { font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 2px; color: #fff; margin-bottom: 0.4rem; }
-    .config-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
-    .config-arrow { font-family: var(--font-display); font-size: 1.25rem; color: var(--text-secondary); flex-shrink: 0; transition: color 0.2s; }
-    .badge-soon { font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 1px; padding: 3px 8px; border: 1px solid var(--border-highlight); color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
-  `]
+  imports: [CommonModule, FormsModule, RouterLink],
+  templateUrl: './configuracion.component.html',
+  styleUrl: './configuracion.component.scss'
 })
-export class ConfiguracionComponent {}
+export class ConfiguracionComponent implements OnInit {
+  tabActiva = signal<Tab>('inicio');
+  cargando = signal(false);
+  mensajeExito = signal('');
+  mensajeError = signal('');
+
+  // Umbrales
+  umbrales: Umbrales = {
+    latencia_maxima_ms: 200,
+    perdida_paquetes_pct: 10,
+    intervalo_ping_defecto: 60,
+    alerta_recuperacion: true
+  };
+  cargandoUmbrales = signal(false);
+
+  // SMTP
+  smtp: Partial<SmtpConfig> = {
+    smtp_host: '',
+    smtp_port: 587,
+    smtp_usuario: '',
+    smtp_password: '',
+    smtp_tls: true,
+    destinatarios: [],
+    notificar_critico: true,
+    notificar_advertencia: true,
+    notificar_recuperacion: false
+  };
+  cargandoSmtp = signal(false);
+  nuevoDestinatario = '';
+  enviandoPrueba = signal(false);
+
+  constructor(
+    private configService: ConfiguracionService,
+    public authService: AuthService
+  ) {}
+
+  ngOnInit(): void {}
+
+  irTab(tab: Tab): void {
+    this.tabActiva.set(tab);
+    this.mensajeExito.set('');
+    this.mensajeError.set('');
+
+    if (tab === 'umbrales') this.cargarUmbrales();
+    if (tab === 'smtp') this.cargarSmtp();
+  }
+
+  // ── Umbrales ──────────────────────────────────────────────────────────────
+  cargarUmbrales(): void {
+    this.cargandoUmbrales.set(true);
+    this.configService.getUmbrales().subscribe({
+      next: u => { this.umbrales = u; this.cargandoUmbrales.set(false); },
+      error: () => this.cargandoUmbrales.set(false)
+    });
+  }
+
+  guardarUmbrales(): void {
+    this.cargando.set(true);
+    this.configService.updateUmbrales(this.umbrales).subscribe({
+      next: u => {
+        this.umbrales = u;
+        this.mensajeExito.set('Umbrales actualizados. El motor de monitoreo los aplicará en el próximo ciclo.');
+        this.cargando.set(false);
+        setTimeout(() => this.mensajeExito.set(''), 4000);
+      },
+      error: err => {
+        this.mensajeError.set(err?.error?.detail || 'Error al guardar umbrales.');
+        this.cargando.set(false);
+      }
+    });
+  }
+
+  // ── SMTP ──────────────────────────────────────────────────────────────────
+  cargarSmtp(): void {
+    this.cargandoSmtp.set(true);
+    this.configService.getSmtp().subscribe({
+      next: s => { this.smtp = s; this.cargandoSmtp.set(false); },
+      error: () => this.cargandoSmtp.set(false)
+    });
+  }
+
+  guardarSmtp(): void {
+    this.cargando.set(true);
+    this.configService.updateSmtp(this.smtp).subscribe({
+      next: s => {
+        this.smtp = s;
+        this.mensajeExito.set('Configuración SMTP guardada correctamente.');
+        this.cargando.set(false);
+        setTimeout(() => this.mensajeExito.set(''), 3500);
+      },
+      error: err => {
+        this.mensajeError.set(err?.error?.detail || 'Error al guardar SMTP.');
+        this.cargando.set(false);
+      }
+    });
+  }
+
+  probarSmtp(): void {
+    this.enviandoPrueba.set(true);
+    this.mensajeExito.set('');
+    this.configService.testSmtp().subscribe({
+      next: () => {
+        this.mensajeExito.set('Email de prueba enviado. Revisa la bandeja de entrada de los destinatarios.');
+        this.enviandoPrueba.set(false);
+        setTimeout(() => this.mensajeExito.set(''), 5000);
+      },
+      error: err => {
+        this.mensajeError.set(err?.error?.detail || 'Error al enviar email de prueba.');
+        this.enviandoPrueba.set(false);
+      }
+    });
+  }
+
+  agregarDestinatario(): void {
+    const email = this.nuevoDestinatario.trim().toLowerCase();
+    if (!email || !email.includes('@')) return;
+    if (!this.smtp.destinatarios) this.smtp.destinatarios = [];
+    if (!this.smtp.destinatarios.includes(email)) {
+      this.smtp.destinatarios = [...this.smtp.destinatarios, email];
+    }
+    this.nuevoDestinatario = '';
+  }
+
+  quitarDestinatario(email: string): void {
+    this.smtp.destinatarios = (this.smtp.destinatarios || []).filter(d => d !== email);
+  }
+
+  esAdmin(): boolean {
+    return this.authService.tieneRol('admin');
+  }
+}
