@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Error al sembrar datos iniciales: {e}")
     
-    # Iniciar ciclo de monitoreo en segundo plano
+    # Inicio del ciclo del monitoreo en segundo plano
     iniciar_monitoreo()
     yield
     # Limpieza al apagar (si fuera necesario)
