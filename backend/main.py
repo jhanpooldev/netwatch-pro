@@ -31,10 +31,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configurar políticas CORS para el cliente Angular (http://localhost:4200)
+# Orígenes permitidos: desarrollo local + producción en Render
+ALLOWED_ORIGINS = [
+    "http://localhost:4200",
+    os.getenv("FRONTEND_URL", "https://netwatch-pro.onrender.com"),
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
