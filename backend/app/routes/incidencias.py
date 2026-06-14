@@ -145,8 +145,18 @@ async def crear(inc_data: IncidenciaCrear, current_user: dict = Depends(get_curr
     await sio.emit('incidencia_nueva', serialized)
     return serialized
 
+class IncidenciaUpdate(BaseModel):
+    titulo: Optional[str] = None
+    descripcion: Optional[str] = None
+    dispositivo_id: Optional[str] = None
+    prioridad: Optional[str] = None
+    tecnico_id: Optional[str] = None
+    alerta_id: Optional[str] = None
+    estado: Optional[str] = None
+    comentario: Optional[str] = None
+
 @router.put("/{id}")
-async def actualizar(id: str, payload: dict, current_user: dict = Depends(get_current_user)):
+async def actualizar(id: str, payload: IncidenciaUpdate, current_user: dict = Depends(get_current_user)):
     try:
         oid = ObjectId(id)
     except Exception:
@@ -157,10 +167,11 @@ async def actualizar(id: str, payload: dict, current_user: dict = Depends(get_cu
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incidencia no encontrada.")
 
     estado_anterior = incidencia.get("estado", "abierta")
+    payload_dict = payload.model_dump(exclude_unset=True)
 
     updates = {}
-    for k, v in payload.items():
-        if k in ["_id", "historial"]:
+    for k, v in payload_dict.items():
+        if k in ["comentario"]:
             continue
         if k == "dispositivo_id" and v:
             updates[k] = ObjectId(v) if isinstance(v, str) else v
@@ -171,13 +182,13 @@ async def actualizar(id: str, payload: dict, current_user: dict = Depends(get_cu
         else:
             updates[k] = v
 
-    nuevo_estado = payload.get("estado")
+    nuevo_estado = payload_dict.get("estado")
     if nuevo_estado and nuevo_estado != estado_anterior:
         historial_item = {
             "estado_anterior": estado_anterior,
             "estado_nuevo": nuevo_estado,
             "usuario_id": ObjectId(current_user["id"]),
-            "comentario": payload.get("comentario", "Estado actualizado."),
+            "comentario": payload_dict.get("comentario", "Estado actualizado."),
             "fecha": datetime.now(timezone.utc)
         }
 

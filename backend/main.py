@@ -30,6 +30,15 @@ logger = logging.getLogger("netwatch")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Iniciando aplicación NetWatch Pro...")
+    
+    # Verificar seguridad de variables de entorno críticas
+    from app.auth import JWT_SECRET
+    if JWT_SECRET == "supersecretdarkindustrialnetwatch":
+        logger.warning(
+            "⚠️ ADVERTENCIA DE CIBERSEGURIDAD: Se está utilizando la clave JWT_SECRET por defecto. "
+            "Para producción en Render, debes configurar la variable JWT_SECRET con un valor de alta entropía."
+        )
+
     try:
         sembrar_datos()
         logger.info("Siembra de datos completada.")
@@ -69,6 +78,17 @@ ALLOWED_ORIGINS = [
     "http://localhost:4200",
     os.getenv("FRONTEND_URL", "https://netwatch-pro.onrender.com"),
 ]
+
+# Middleware de Seguridad Cibernética (Cabeceras HTTP de Seguridad)
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 app.add_middleware(
     CORSMiddleware,

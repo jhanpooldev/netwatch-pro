@@ -20,6 +20,16 @@ class DispositivoBase(BaseModel):
     latencia_actual: Optional[float] = None
     intervalo_ping: Optional[int] = 60
 
+class DispositivoUpdate(BaseModel):
+    nombre: Optional[str] = None
+    ip_address: Optional[str] = None
+    mac_address: Optional[str] = None
+    tipo: Optional[str] = None
+    ubicacion: Optional[str] = None
+    estado: Optional[str] = None
+    latencia_actual: Optional[float] = None
+    intervalo_ping: Optional[int] = None
+
 @router.get("/")
 def listar(current_user: dict = Depends(get_current_user)):
     dispositivos = list(dispositivos_col.find().sort("created_at", -1))
@@ -65,24 +75,20 @@ async def crear(disp_data: DispositivoBase, current_user: dict = Depends(get_cur
     return serialized
 
 @router.put("/{id}")
-async def actualizar(id: str, disp_data: dict, current_user: dict = Depends(get_current_user)):
+async def actualizar(id: str, disp_data: DispositivoUpdate, current_user: dict = Depends(get_current_user)):
     try:
         oid = ObjectId(id)
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID inválido.")
 
-    disp_data.pop("_id", None)
-    
-    # Convertir campos de tipo específicos si es necesario
-    if "intervalo_ping" in disp_data:
-        disp_data["intervalo_ping"] = int(disp_data["intervalo_ping"])
-    if "latencia_actual" in disp_data and disp_data["latencia_actual"] is not None:
-        disp_data["latencia_actual"] = float(disp_data["latencia_actual"])
+    update_dict = disp_data.model_dump(exclude_unset=True)
+    if not update_dict:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay campos para actualizar.")
 
     from pymongo import ReturnDocument
     res = dispositivos_col.find_one_and_update(
         {"_id": oid},
-        {"$set": disp_data},
+        {"$set": update_dict},
         return_document=ReturnDocument.AFTER
     )
     if not res:
