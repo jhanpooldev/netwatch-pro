@@ -11,18 +11,34 @@ from app.seeding import sembrar_datos
 from app.monitoring import iniciar_monitoreo
 from app.routes import auth, dispositivos, incidencias, alertas, usuarios, configuracion
 
+import logging
+from fastapi.responses import JSONResponse
+from fastapi import Request
+from pymongo.errors import PyMongoError
+
+# Configurar Logging Profesional
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("app.log", encoding="utf-8")
+    ]
+)
+logger = logging.getLogger("netwatch")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Inicialización al arrancar
+    logger.info("Iniciando aplicación NetWatch Pro...")
     try:
         sembrar_datos()
+        logger.info("Siembra de datos completada.")
     except Exception as e:
-        print(f"Error al sembrar datos iniciales: {e}")
+        logger.error(f"Error al sembrar datos iniciales: {e}", exc_info=True)
     
-    # Iniciar ciclo de monitoreo en segundo plano
     iniciar_monitoreo()
     yield
-    # Limpieza al apagar (si fuera necesario)
+    logger.info("Deteniendo aplicación NetWatch Pro...")
 
 app = FastAPI(
     title="NetWatch Pro API",
@@ -30,6 +46,23 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Manejadores Globales de Excepciones
+@app.exception_handler(PyMongoError)
+async def pymongo_exception_handler(request: Request, exc: PyMongoError):
+    logger.error(f"Error de base de datos (MongoDB) en {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Error de base de datos interno."}
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Excepción no controlada en {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Ocurrió un error inesperado en el servidor."}
+    )
 
 # Orígenes permitidos: desarrollo local + producción en Render
 ALLOWED_ORIGINS = [

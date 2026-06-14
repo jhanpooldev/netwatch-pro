@@ -57,19 +57,41 @@ def listar(
 
 @router.get("/estadisticas")
 def estadisticas(current_user: dict = Depends(get_current_user)):
-    total = incidencias_col.count_documents({})
-    abiertas = incidencias_col.count_documents({"estado": "abierta"})
-    en_progreso = incidencias_col.count_documents({"estado": "en_progreso"})
-    resueltas = incidencias_col.count_documents({"estado": "resuelta"})
-    criticas = incidencias_col.count_documents({
-        "prioridad": "critica",
-        "estado": {"$nin": ["resuelta", "cerrada"]}
-    })
+    pipeline = [
+        {
+            "$facet": {
+                "totales": [{"$count": "count"}],
+                "por_estado": [
+                    {"$group": {"_id": "$estado", "count": {"$sum": 1}}}
+                ],
+                "criticas": [
+                    {
+                        "$match": {
+                            "prioridad": "critica",
+                            "estado": {"$nin": ["resuelta", "cerrada"]}
+                        }
+                    },
+                    {"$count": "count"}
+                ]
+            }
+        }
+    ]
+    
+    result = list(incidencias_col.aggregate(pipeline))
+    if not result:
+        return {"total": 0, "abiertas": 0, "en_progreso": 0, "resueltas": 0, "criticas": 0}
+
+    data = result[0]
+    total = data["totales"][0]["count"] if data["totales"] else 0
+    criticas = data["criticas"][0]["count"] if data["criticas"] else 0
+    
+    estados = {item["_id"]: item["count"] for item in data["por_estado"]}
+    
     return {
         "total": total,
-        "abiertas": abiertas,
-        "en_progreso": en_progreso,
-        "resueltas": resueltas,
+        "abiertas": estados.get("abierta", 0),
+        "en_progreso": estados.get("en_progreso", 0),
+        "resueltas": estados.get("resuelta", 0),
         "criticas": criticas
     }
 

@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { UsuariosService } from '../../core/services/usuarios.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UsuarioCompleto, UsuarioCreate } from '../../core/models/configuracion.model';
@@ -8,7 +9,7 @@ import { UsuarioCompleto, UsuarioCreate } from '../../core/models/configuracion.
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './usuarios.component.html',
   styleUrl: './usuarios.component.scss'
 })
@@ -22,12 +23,30 @@ export class UsuariosComponent implements OnInit {
   mostrarPassword = signal(false);
 
   usuarioEditandoId = '';
-  form: Partial<UsuarioCreate & { activo: boolean }> = this.formVacio();
+  
+  // Reactividad de Formulario con Signals
+  userForm: FormGroup;
+
+  // Computed Signals para contadores de estadísticas reactivas
+  totalUsuarios = computed(() => this.usuarios().length);
+  countActivos = computed(() => this.usuarios().filter(u => u.activo).length);
+  countAdmin = computed(() => this.usuarios().filter(u => u.rol === 'admin').length);
+  countTecnico = computed(() => this.usuarios().filter(u => u.rol === 'tecnico').length);
+  countObservador = computed(() => this.usuarios().filter(u => u.rol === 'observador').length);
 
   constructor(
+    private fb: FormBuilder,
     private usuariosService: UsuariosService,
     public authService: AuthService
-  ) {}
+  ) {
+    this.userForm = this.fb.group({
+      nombre: ['', [Validators.required, Validators.minLength(3)]],
+      correo: ['', [Validators.required, Validators.email]],
+      rol: ['tecnico', [Validators.required]],
+      activo: [true, [Validators.required]],
+      password: ['', []]
+    });
+  }
 
   ngOnInit(): void { this.cargar(); }
 
@@ -39,31 +58,39 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  formVacio(): Partial<UsuarioCreate & { activo: boolean }> {
-    return { nombre: '', correo: '', password: '', rol: 'tecnico', activo: true };
-  }
-
   abrirNuevo(): void {
-    this.form = this.formVacio();
     this.modoEdicion.set(false);
     this.mostrarModal.set(true);
     this.mensajeError.set('');
     this.mostrarPassword.set(false);
+    
+    this.userForm.reset({
+      nombre: '',
+      correo: '',
+      rol: 'tecnico',
+      activo: true,
+      password: ''
+    });
+    this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
+    this.userForm.get('password')?.updateValueAndValidity();
   }
 
   abrirEditar(u: UsuarioCompleto): void {
-    this.form = {
-      nombre: u.nombre,
-      correo: u.correo,
-      rol: u.rol,
-      activo: u.activo,
-      password: ''
-    };
     this.usuarioEditandoId = u._id;
     this.modoEdicion.set(true);
     this.mostrarModal.set(true);
     this.mensajeError.set('');
     this.mostrarPassword.set(false);
+
+    this.userForm.reset({
+      nombre: u.nombre,
+      correo: u.correo,
+      rol: u.rol,
+      activo: u.activo,
+      password: ''
+    });
+    this.userForm.get('password')?.setValidators([Validators.minLength(6)]);
+    this.userForm.get('password')?.updateValueAndValidity();
   }
 
   cerrarModal(): void {
@@ -72,24 +99,23 @@ export class UsuariosComponent implements OnInit {
   }
 
   guardar(): void {
-    if (!this.form.nombre?.trim() || !this.form.correo?.trim()) {
-      this.mensajeError.set('Nombre y correo son requeridos.');
-      return;
-    }
-    if (!this.modoEdicion() && !this.form.password?.trim()) {
-      this.mensajeError.set('La contraseña es requerida para usuarios nuevos.');
+    if (this.userForm.invalid) {
+      this.userForm.markAllAsTouched();
+      this.mensajeError.set('Por favor, corrija los errores en el formulario.');
       return;
     }
 
+    const formVal = this.userForm.value;
+
     if (this.modoEdicion()) {
       const update: any = {
-        nombre: this.form.nombre,
-        correo: this.form.correo,
-        rol: this.form.rol,
-        activo: this.form.activo
+        nombre: formVal.nombre,
+        correo: formVal.correo,
+        rol: formVal.rol,
+        activo: formVal.activo
       };
-      if (this.form.password?.trim()) {
-        update.password = this.form.password;
+      if (formVal.password?.trim()) {
+        update.password = formVal.password;
       }
       this.usuariosService.actualizar(this.usuarioEditandoId, update).subscribe({
         next: () => {
@@ -101,7 +127,7 @@ export class UsuariosComponent implements OnInit {
         error: err => this.mensajeError.set(err?.error?.detail || 'Error al actualizar.')
       });
     } else {
-      this.usuariosService.crear(this.form as UsuarioCreate).subscribe({
+      this.usuariosService.crear(formVal as UsuarioCreate).subscribe({
         next: () => {
           this.mensajeExito.set('Usuario creado correctamente.');
           this.cerrarModal();
@@ -139,14 +165,6 @@ export class UsuariosComponent implements OnInit {
 
   etiquetaRol(rol: string): string {
     return ({ admin: 'Admin', tecnico: 'Técnico', observador: 'Observador' } as any)[rol] || rol;
-  }
-
-  countActivos(): number {
-    return this.usuarios().filter(u => u.activo).length;
-  }
-
-  countByRol(rol: string): number {
-    return this.usuarios().filter(u => u.rol === rol).length;
   }
 
   esYo(u: UsuarioCompleto): boolean {
