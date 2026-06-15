@@ -4,7 +4,6 @@
 
 export const environment = {
   production: true,
-  // Render inyecta BACKEND_URL como variable de entorno en el build del Static Site
-  apiUrl: 'https://netwatch-pro-api.onrender.com/api',
-  wsUrl: 'https://netwatch-pro-api.onrender.com'
+  apiUrl: 'https://netwatch-pro-4ujj.onrender.com/api',
+  wsUrl: 'https://netwatch-pro-4ujj.onrender.com'
 };
