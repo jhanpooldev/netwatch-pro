@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
         logger.info("Siembra de datos completada.")
     except Exception as e:
         logger.error(f"Error al sembrar datos iniciales: {e}", exc_info=True)
-    
+    # Inicio del ciclo del monitoreo en segundo plano
     iniciar_monitoreo()
     yield
     logger.info("Deteniendo aplicación NetWatch Pro...")
