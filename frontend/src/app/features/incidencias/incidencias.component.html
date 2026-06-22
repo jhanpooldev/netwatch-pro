@@ -9,11 +9,11 @@
 
   @if (mensajeExito()) { <div class="alert-success">✓ {{ mensajeExito() }}</div> }
 
-  <!-- Filters -->
+  <!-- Filters (usan binding directo de propiedades, no form) -->
   <div class="filter-bar">
     <div class="filter-group">
       <label>ESTADO</label>
-      <select [(ngModel)]="filtroEstado" (change)="paginaActual=1; cargar()">
+      <select [value]="filtroEstado" (change)="filtrarEstado($any($event.target).value)" id="sel-filtro-estado">
         <option value="">Todos</option>
         <option value="abierta">Abierta</option>
         <option value="en_progreso">En Progreso</option>
@@ -23,7 +23,7 @@
     </div>
     <div class="filter-group">
       <label>PRIORIDAD</label>
-      <select [(ngModel)]="filtroPrioridad" (change)="paginaActual=1; cargar()">
+      <select [value]="filtroPrioridad" (change)="filtrarPrioridad($any($event.target).value)" id="sel-filtro-prioridad">
         <option value="">Todas</option>
         <option value="baja">Baja</option>
         <option value="media">Media</option>
@@ -92,55 +92,66 @@
         <div class="modal-content">
           <h3>{{ modoEdicion() ? 'EDITAR_INCIDENCIA' : 'NUEVA_INCIDENCIA' }}</h3>
           @if (mensajeError()) { <div class="alert-error-sm">{{ mensajeError() }}</div> }
-          <div class="fg">
-            <label>TÍTULO *</label>
-            <input type="text" [(ngModel)]="form.titulo" placeholder="Descripción breve del problema" maxlength="100" />
-          </div>
-          <div class="fg">
-            <label>DESCRIPCIÓN DETALLADA *</label>
-            <textarea [(ngModel)]="form.descripcion" rows="4" placeholder="Describe el problema con detalle..."></textarea>
-          </div>
-          <div class="form-row">
+
+          <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
             <div class="fg">
-              <label>DISPOSITIVO AFECTADO</label>
-              <select [(ngModel)]="form.dispositivo_id">
-                <option value="">— Seleccionar —</option>
-                @for (d of dispositivos(); track d._id) {
-                  <option [value]="d._id">{{ d.nombre }} ({{ d.ip_address }})</option>
-                }
-              </select>
+              <label>TÍTULO *</label>
+              <input type="text" formControlName="titulo" placeholder="Descripción breve del problema"
+                [class.input-invalid]="tituloInvalido" id="inp-inc-titulo" />
+              @if (tituloInvalido) {
+                <span class="field-error">El título es requerido (mín. 5, máx. 100 caracteres).</span>
+              }
             </div>
             <div class="fg">
-              <label>PRIORIDAD</label>
-              <select [(ngModel)]="form.prioridad">
-                <option value="baja">Baja</option>
-                <option value="media">Media</option>
-                <option value="alta">Alta</option>
-                <option value="critica">Crítica</option>
-              </select>
+              <label>DESCRIPCIÓN DETALLADA *</label>
+              <textarea formControlName="descripcion" rows="4" placeholder="Describe el problema con detalle..."
+                [class.input-invalid]="descripcionInvalida" id="inp-inc-descripcion"></textarea>
+              @if (descripcionInvalida) {
+                <span class="field-error">La descripción es requerida (mín. 10 caracteres).</span>
+              }
             </div>
-          </div>
-          @if (modoEdicion()) {
             <div class="form-row">
               <div class="fg">
-                <label>ESTADO</label>
-                <select [(ngModel)]="form.estado">
-                  <option value="abierta">Abierta</option>
-                  <option value="en_progreso">En Progreso</option>
-                  <option value="resuelta">Resuelta</option>
-                  <option value="cerrada">Cerrada</option>
+                <label>DISPOSITIVO AFECTADO</label>
+                <select formControlName="dispositivo_id" id="sel-inc-dispositivo">
+                  <option value="">— Seleccionar —</option>
+                  @for (d of dispositivos(); track d._id) {
+                    <option [value]="d._id">{{ d.nombre }} ({{ d.ip_address }})</option>
+                  }
                 </select>
               </div>
               <div class="fg">
-                <label>COMENTARIO</label>
-                <input type="text" [(ngModel)]="form.comentario" placeholder="Motivo del cambio..." />
+                <label>PRIORIDAD</label>
+                <select formControlName="prioridad" id="sel-inc-prioridad">
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                  <option value="critica">Crítica</option>
+                </select>
               </div>
             </div>
-          }
-          <div class="modal-actions">
-            <button class="btn-cancel" (click)="cerrarModal()">CANCELAR</button>
-            <button class="btn-save" (click)="guardar()">{{ modoEdicion() ? 'ACTUALIZAR' : 'CREAR' }}</button>
-          </div>
+            @if (modoEdicion()) {
+              <div class="form-row">
+                <div class="fg">
+                  <label>ESTADO</label>
+                  <select formControlName="estado" id="sel-inc-estado">
+                    <option value="abierta">Abierta</option>
+                    <option value="en_progreso">En Progreso</option>
+                    <option value="resuelta">Resuelta</option>
+                    <option value="cerrada">Cerrada</option>
+                  </select>
+                </div>
+                <div class="fg">
+                  <label>COMENTARIO</label>
+                  <input type="text" formControlName="comentario" placeholder="Motivo del cambio..." id="inp-inc-comentario" />
+                </div>
+              </div>
+            }
+            <div class="modal-actions">
+              <button type="button" class="btn-cancel" (click)="cerrarModal()">CANCELAR</button>
+              <button type="submit" class="btn-save">{{ modoEdicion() ? 'ACTUALIZAR' : 'CREAR' }}</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

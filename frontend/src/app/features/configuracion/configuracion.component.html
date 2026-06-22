@@ -89,85 +89,95 @@
         </div>
       }
 
-      <div class="settings-panel">
-        <!-- Latencia máxima -->
-        <div class="setting-row">
-          <div class="setting-info">
-            <div class="setting-name">LATENCIA MÁXIMA</div>
-            <div class="setting-desc">Si la latencia de ping supera este valor, el dispositivo pasa a estado "Degradado" y genera una alerta de advertencia.</div>
-          </div>
-          <div class="setting-control">
-            <div class="input-unit-wrap">
-              <input type="number" [(ngModel)]="umbrales.latencia_maxima_ms"
-                [disabled]="!esAdmin()" min="1" max="10000" id="inp-latencia-max" />
-              <span class="unit-label">ms</span>
+      <form [formGroup]="formUmbrales" (ngSubmit)="guardarUmbrales()" novalidate>
+        <div class="settings-panel">
+          <!-- Latencia máxima -->
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">LATENCIA MÁXIMA</div>
+              <div class="setting-desc">Si la latencia de ping supera este valor, el dispositivo pasa a estado "Degradado" y genera una alerta de advertencia.</div>
             </div>
-            <div class="range-hint">Rango: 1 – 10000 ms · Recomendado: 200</div>
-          </div>
-        </div>
-
-        <div class="setting-divider"></div>
-
-        <!-- Pérdida de paquetes -->
-        <div class="setting-row">
-          <div class="setting-info">
-            <div class="setting-name">PÉRDIDA DE PAQUETES</div>
-            <div class="setting-desc">Porcentaje de paquetes perdidos que activa una alerta crítica. (Funcionalidad en expansión — actualmente el motor usa ping único por ciclo).</div>
-          </div>
-          <div class="setting-control">
-            <div class="input-unit-wrap">
-              <input type="number" [(ngModel)]="umbrales.perdida_paquetes_pct"
-                [disabled]="!esAdmin()" min="0" max="100" step="5" id="inp-perdida-pct" />
-              <span class="unit-label">%</span>
+            <div class="setting-control">
+              <div class="input-unit-wrap">
+                <input type="number" formControlName="latencia_maxima_ms" min="1" max="10000" id="inp-latencia-max"
+                  [class.input-invalid]="fu['latencia_maxima_ms'].invalid && fu['latencia_maxima_ms'].touched" />
+                <span class="unit-label">ms</span>
+              </div>
+              @if (fu['latencia_maxima_ms'].invalid && fu['latencia_maxima_ms'].touched) {
+                <span class="field-error">Valor entre 1 y 10000 ms.</span>
+              }
+              <div class="range-hint">Rango: 1 – 10000 ms · Recomendado: 200</div>
             </div>
-            <div class="range-hint">Rango: 0 – 100 % · Recomendado: 10</div>
           </div>
-        </div>
 
-        <div class="setting-divider"></div>
+          <div class="setting-divider"></div>
 
-        <!-- Intervalo ping por defecto -->
-        <div class="setting-row">
-          <div class="setting-info">
-            <div class="setting-name">INTERVALO DE PING POR DEFECTO</div>
-            <div class="setting-desc">Frecuencia de verificación predeterminada para nuevos dispositivos. Los dispositivos existentes mantienen su propio intervalo configurado.</div>
-          </div>
-          <div class="setting-control">
-            <div class="input-unit-wrap">
-              <input type="number" [(ngModel)]="umbrales.intervalo_ping_defecto"
-                [disabled]="!esAdmin()" min="5" max="3600" id="inp-intervalo-ping" />
-              <span class="unit-label">seg</span>
+          <!-- Pérdida de paquetes -->
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">PÉRDIDA DE PAQUETES</div>
+              <div class="setting-desc">Porcentaje de paquetes perdidos que activa una alerta crítica.</div>
             </div>
-            <div class="range-hint">Rango: 5 – 3600 s · Recomendado: 60</div>
+            <div class="setting-control">
+              <div class="input-unit-wrap">
+                <input type="number" formControlName="perdida_paquetes_pct" min="0" max="100" step="5" id="inp-perdida-pct"
+                  [class.input-invalid]="fu['perdida_paquetes_pct'].invalid && fu['perdida_paquetes_pct'].touched" />
+                <span class="unit-label">%</span>
+              </div>
+              @if (fu['perdida_paquetes_pct'].invalid && fu['perdida_paquetes_pct'].touched) {
+                <span class="field-error">Valor entre 0 y 100 %.</span>
+              }
+              <div class="range-hint">Rango: 0 – 100 % · Recomendado: 10</div>
+            </div>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <!-- Intervalo ping por defecto -->
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">INTERVALO DE PING POR DEFECTO</div>
+              <div class="setting-desc">Frecuencia de verificación predeterminada para nuevos dispositivos.</div>
+            </div>
+            <div class="setting-control">
+              <div class="input-unit-wrap">
+                <input type="number" formControlName="intervalo_ping_defecto" min="5" max="3600" id="inp-intervalo-ping"
+                  [class.input-invalid]="fu['intervalo_ping_defecto'].invalid && fu['intervalo_ping_defecto'].touched" />
+                <span class="unit-label">seg</span>
+              </div>
+              @if (fu['intervalo_ping_defecto'].invalid && fu['intervalo_ping_defecto'].touched) {
+                <span class="field-error">Valor entre 5 y 3600 segundos.</span>
+              }
+              <div class="range-hint">Rango: 5 – 3600 s · Recomendado: 60</div>
+            </div>
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <!-- Alerta recuperación -->
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-name">ALERTA DE RECUPERACIÓN</div>
+              <div class="setting-desc">Genera una alerta informativa cuando un dispositivo previamente caído vuelve a responder.</div>
+            </div>
+            <div class="setting-control">
+              <label class="toggle-switch" [class.disabled]="!esAdmin()">
+                <input type="checkbox" formControlName="alerta_recuperacion" id="chk-alerta-recuperacion" />
+                <span class="toggle-slider"></span>
+              </label>
+              <div class="range-hint">{{ formUmbrales.get('alerta_recuperacion')?.value ? 'Habilitado' : 'Deshabilitado' }}</div>
+            </div>
           </div>
         </div>
 
-        <div class="setting-divider"></div>
-
-        <!-- Alerta recuperación -->
-        <div class="setting-row">
-          <div class="setting-info">
-            <div class="setting-name">ALERTA DE RECUPERACIÓN</div>
-            <div class="setting-desc">Genera una alerta informativa cuando un dispositivo previamente caído vuelve a responder.</div>
+        @if (esAdmin()) {
+          <div class="form-actions">
+            <button type="submit" class="btn-save-big" [disabled]="cargando()" id="btn-guardar-umbrales">
+              {{ cargando() ? 'GUARDANDO...' : 'GUARDAR UMBRALES' }}
+            </button>
           </div>
-          <div class="setting-control">
-            <label class="toggle-switch" [class.disabled]="!esAdmin()">
-              <input type="checkbox" [(ngModel)]="umbrales.alerta_recuperacion"
-                [disabled]="!esAdmin()" id="chk-alerta-recuperacion" />
-              <span class="toggle-slider"></span>
-            </label>
-            <div class="range-hint">{{ umbrales.alerta_recuperacion ? 'Habilitado' : 'Deshabilitado' }}</div>
-          </div>
-        </div>
-      </div>
-
-      @if (esAdmin()) {
-        <div class="form-actions">
-          <button class="btn-save-big" [disabled]="cargando()" (click)="guardarUmbrales()" id="btn-guardar-umbrales">
-            {{ cargando() ? 'GUARDANDO...' : 'GUARDAR UMBRALES' }}
-          </button>
-        </div>
-      }
+        }
+      </form>
     </div>
   }
 
@@ -192,114 +202,128 @@
         </div>
       }
 
-      <div class="settings-panel">
-        <!-- Servidor -->
-        <div class="smtp-group">
-          <div class="smtp-group-label">SERVIDOR SMTP</div>
-          <div class="form-row">
-            <div class="fg">
-              <label>HOST</label>
-              <input type="text" [(ngModel)]="smtp.smtp_host" [disabled]="!esAdmin()"
-                placeholder="smtp.gmail.com" id="inp-smtp-host" />
-            </div>
-            <div class="fg">
-              <label>PUERTO</label>
-              <input type="number" [(ngModel)]="smtp.smtp_port" [disabled]="!esAdmin()"
-                placeholder="587" id="inp-smtp-port" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="fg">
-              <label>USUARIO / EMAIL REMITENTE</label>
-              <input type="email" [(ngModel)]="smtp.smtp_usuario" [disabled]="!esAdmin()"
-                placeholder="alertas@empresa.com" id="inp-smtp-user" />
-            </div>
-            <div class="fg">
-              <label>CONTRASEÑA / APP PASSWORD</label>
-              <input type="password" [(ngModel)]="smtp.smtp_password" [disabled]="!esAdmin()"
-                placeholder="••••••••" id="inp-smtp-pass" />
-            </div>
-          </div>
-          <div class="toggle-row">
-            <label class="toggle-switch" [class.disabled]="!esAdmin()">
-              <input type="checkbox" [(ngModel)]="smtp.smtp_tls" [disabled]="!esAdmin()" id="chk-smtp-tls" />
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label">Usar STARTTLS (recomendado para puerto 587)</span>
-          </div>
-        </div>
-
-        <div class="setting-divider"></div>
-
-        <!-- Destinatarios -->
-        <div class="smtp-group">
-          <div class="smtp-group-label">DESTINATARIOS DE ALERTAS</div>
-          <div class="dest-list">
-            @for (dest of smtp.destinatarios || []; track dest) {
-              <div class="dest-chip">
-                <span>{{ dest }}</span>
-                @if (esAdmin()) {
-                  <button class="chip-remove" (click)="quitarDestinatario(dest)">×</button>
+      <form [formGroup]="formSmtp" (ngSubmit)="guardarSmtp()" novalidate>
+        <div class="settings-panel">
+          <!-- Servidor -->
+          <div class="smtp-group">
+            <div class="smtp-group-label">SERVIDOR SMTP</div>
+            <div class="form-row">
+              <div class="fg">
+                <label>HOST</label>
+                <input type="text" formControlName="smtp_host" placeholder="smtp.gmail.com" id="inp-smtp-host"
+                  [class.input-invalid]="fs['smtp_host'].invalid && fs['smtp_host'].touched" />
+                @if (fs['smtp_host'].invalid && fs['smtp_host'].touched) {
+                  <span class="field-error">El host SMTP es requerido.</span>
                 }
               </div>
-            }
-            @empty {
-              <span class="empty-dest">No hay destinatarios configurados.</span>
-            }
-          </div>
-          @if (esAdmin()) {
-            <div class="dest-add">
-              <input type="email" [(ngModel)]="nuevoDestinatario" placeholder="nuevo@destinatario.com"
-                (keyup.enter)="agregarDestinatario()" id="inp-nuevo-destinatario" />
-              <button class="btn-add-dest" (click)="agregarDestinatario()">+ AGREGAR</button>
+              <div class="fg">
+                <label>PUERTO</label>
+                <input type="number" formControlName="smtp_port" placeholder="587" id="inp-smtp-port"
+                  [class.input-invalid]="fs['smtp_port'].invalid && fs['smtp_port'].touched" />
+                @if (fs['smtp_port'].invalid && fs['smtp_port'].touched) {
+                  <span class="field-error">Puerto entre 1 y 65535.</span>
+                }
+              </div>
             </div>
-          }
-        </div>
+            <div class="form-row">
+              <div class="fg">
+                <label>USUARIO / EMAIL REMITENTE</label>
+                <input type="email" formControlName="smtp_usuario" placeholder="alertas@empresa.com" id="inp-smtp-user"
+                  [class.input-invalid]="fs['smtp_usuario'].invalid && fs['smtp_usuario'].touched" />
+                @if (fs['smtp_usuario'].invalid && fs['smtp_usuario'].touched) {
+                  <span class="field-error">Ingresa un correo electrónico válido.</span>
+                }
+              </div>
+              <div class="fg">
+                <label>CONTRASEÑA / APP PASSWORD</label>
+                <input type="password" formControlName="smtp_password" placeholder="••••••••" id="inp-smtp-pass" />
+              </div>
+            </div>
+            <div class="toggle-row">
+              <label class="toggle-switch" [class.disabled]="!esAdmin()">
+                <input type="checkbox" formControlName="smtp_tls" id="chk-smtp-tls" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Usar STARTTLS (recomendado para puerto 587)</span>
+            </div>
+          </div>
 
-        <div class="setting-divider"></div>
+          <div class="setting-divider"></div>
 
-        <!-- Qué notificar -->
-        <div class="smtp-group">
-          <div class="smtp-group-label">QUÉ NOTIFICAR</div>
-          <div class="notif-options">
-            <label class="notif-option">
-              <input type="checkbox" [(ngModel)]="smtp.notificar_critico" [disabled]="!esAdmin()" id="chk-notif-critico" />
-              <div class="notif-info">
-                <span class="notif-title">Alertas Críticas</span>
-                <span class="notif-desc">Dispositivos caídos, sin respuesta al ping</span>
+          <!-- Destinatarios -->
+          <div class="smtp-group">
+            <div class="smtp-group-label">DESTINATARIOS DE ALERTAS</div>
+            <div class="dest-list">
+              @for (dest of destinatarios; track dest) {
+                <div class="dest-chip">
+                  <span>{{ dest }}</span>
+                  @if (esAdmin()) {
+                    <button type="button" class="chip-remove" (click)="quitarDestinatario(dest)">×</button>
+                  }
+                </div>
+              }
+              @empty {
+                <span class="empty-dest">No hay destinatarios configurados.</span>
+              }
+            </div>
+            @if (esAdmin()) {
+              <div class="dest-add">
+                <input type="email" #destInput
+                  [value]="nuevoDestinatario"
+                  (input)="nuevoDestinatario = $any($event.target).value"
+                  placeholder="nuevo@destinatario.com"
+                  (keyup.enter)="agregarDestinatario(); destInput.value=''"
+                  id="inp-nuevo-destinatario" />
+                <button type="button" class="btn-add-dest" (click)="agregarDestinatario(); destInput.value=''">+ AGREGAR</button>
               </div>
-              <span class="notif-badge critico">CRÍTICO</span>
-            </label>
-            <label class="notif-option">
-              <input type="checkbox" [(ngModel)]="smtp.notificar_advertencia" [disabled]="!esAdmin()" id="chk-notif-advert" />
-              <div class="notif-info">
-                <span class="notif-title">Advertencias</span>
-                <span class="notif-desc">Latencia alta, degradación del servicio</span>
-              </div>
-              <span class="notif-badge advertencia">ADVERTENCIA</span>
-            </label>
-            <label class="notif-option">
-              <input type="checkbox" [(ngModel)]="smtp.notificar_recuperacion" [disabled]="!esAdmin()" id="chk-notif-recup" />
-              <div class="notif-info">
-                <span class="notif-title">Recuperaciones</span>
-                <span class="notif-desc">Dispositivos que vuelven a estar en línea</span>
-              </div>
-              <span class="notif-badge recuperacion">INFO</span>
-            </label>
+            }
+          </div>
+
+          <div class="setting-divider"></div>
+
+          <!-- Qué notificar -->
+          <div class="smtp-group">
+            <div class="smtp-group-label">QUÉ NOTIFICAR</div>
+            <div class="notif-options">
+              <label class="notif-option">
+                <input type="checkbox" formControlName="notificar_critico" id="chk-notif-critico" />
+                <div class="notif-info">
+                  <span class="notif-title">Alertas Críticas</span>
+                  <span class="notif-desc">Dispositivos caídos, sin respuesta al ping</span>
+                </div>
+                <span class="notif-badge critico">CRÍTICO</span>
+              </label>
+              <label class="notif-option">
+                <input type="checkbox" formControlName="notificar_advertencia" id="chk-notif-advert" />
+                <div class="notif-info">
+                  <span class="notif-title">Advertencias</span>
+                  <span class="notif-desc">Latencia alta, degradación del servicio</span>
+                </div>
+                <span class="notif-badge advertencia">ADVERTENCIA</span>
+              </label>
+              <label class="notif-option">
+                <input type="checkbox" formControlName="notificar_recuperacion" id="chk-notif-recup" />
+                <div class="notif-info">
+                  <span class="notif-title">Recuperaciones</span>
+                  <span class="notif-desc">Dispositivos que vuelven a estar en línea</span>
+                </div>
+                <span class="notif-badge recuperacion">INFO</span>
+              </label>
+            </div>
           </div>
         </div>
-      </div>
 
-      @if (esAdmin()) {
-        <div class="form-actions">
-          <button class="btn-test" [disabled]="enviandoPrueba()" (click)="probarSmtp()" id="btn-probar-smtp">
-            {{ enviandoPrueba() ? 'ENVIANDO...' : '✉ ENVIAR EMAIL DE PRUEBA' }}
-          </button>
-          <button class="btn-save-big" [disabled]="cargando()" (click)="guardarSmtp()" id="btn-guardar-smtp">
-            {{ cargando() ? 'GUARDANDO...' : 'GUARDAR CONFIGURACIÓN' }}
-          </button>
-        </div>
-      }
+        @if (esAdmin()) {
+          <div class="form-actions">
+            <button type="button" class="btn-test" [disabled]="enviandoPrueba()" (click)="probarSmtp()" id="btn-probar-smtp">
+              {{ enviandoPrueba() ? 'ENVIANDO...' : '✉ ENVIAR EMAIL DE PRUEBA' }}
+            </button>
+            <button type="submit" class="btn-save-big" [disabled]="cargando()" id="btn-guardar-smtp">
+              {{ cargando() ? 'GUARDANDO...' : 'GUARDAR CONFIGURACIÓN' }}
+            </button>
+          </div>
+        }
+      </form>
     </div>
   }
 </div>

@@ -63,45 +63,60 @@
         <div class="modal-content">
           <h3>{{ modoEdicion() ? 'EDITAR_DISPOSITIVO' : 'NUEVO_DISPOSITIVO' }}</h3>
           @if (mensajeError()) { <div class="alert-error-sm">{{ mensajeError() }}</div> }
-          <div class="form-row">
-            <div class="fg">
-              <label>NOMBRE *</label>
-              <input type="text" [(ngModel)]="form.nombre" placeholder="Router Principal" />
+
+          <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+            <div class="form-row">
+              <div class="fg">
+                <label>NOMBRE *</label>
+                <input type="text" formControlName="nombre" placeholder="Router Principal"
+                  [class.input-invalid]="nombreInvalido" id="inp-disp-nombre" />
+                @if (nombreInvalido) {
+                  <span class="field-error">El nombre es requerido (mín. 2 caracteres).</span>
+                }
+              </div>
+              <div class="fg">
+                <label>DIRECCIÓN IP *</label>
+                <input type="text" formControlName="ip_address" placeholder="192.168.1.1"
+                  [class.input-invalid]="ipInvalida" id="inp-disp-ip" />
+                @if (ipInvalida) {
+                  <span class="field-error">Ingresa una dirección IP o dominio válido.</span>
+                }
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="fg">
+                <label>TIPO</label>
+                <select formControlName="tipo" id="sel-disp-tipo">
+                  <option value="router">Router</option>
+                  <option value="switch">Switch</option>
+                  <option value="servidor">Servidor</option>
+                  <option value="workstation">Workstation</option>
+                  <option value="impresora">Impresora</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>INTERVALO PING (seg)</label>
+                <input type="number" formControlName="intervalo_ping" min="5" max="3600"
+                  [class.input-invalid]="intervaloInvalido" id="inp-disp-intervalo" />
+                @if (intervaloInvalido) {
+                  <span class="field-error">El intervalo debe estar entre 5 y 3600 segundos.</span>
+                }
+              </div>
             </div>
             <div class="fg">
-              <label>DIRECCIÓN IP *</label>
-              <input type="text" [(ngModel)]="form.ip_address" placeholder="192.168.1.1" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="fg">
-              <label>TIPO</label>
-              <select [(ngModel)]="form.tipo">
-                <option value="router">Router</option>
-                <option value="switch">Switch</option>
-                <option value="servidor">Servidor</option>
-                <option value="workstation">Workstation</option>
-                <option value="impresora">Impresora</option>
-                <option value="otro">Otro</option>
-              </select>
+              <label>UBICACIÓN FÍSICA</label>
+              <input type="text" formControlName="ubicacion" placeholder="Sala Servidores - Rack A1" id="inp-disp-ubicacion" />
             </div>
             <div class="fg">
-              <label>INTERVALO PING (seg)</label>
-              <input type="number" [(ngModel)]="form.intervalo_ping" min="10" max="3600" />
+              <label>MAC ADDRESS (opcional)</label>
+              <input type="text" formControlName="mac_address" placeholder="00:1A:2B:3C:4D:5E" id="inp-disp-mac" />
             </div>
-          </div>
-          <div class="fg">
-            <label>UBICACIÓN FÍSICA</label>
-            <input type="text" [(ngModel)]="form.ubicacion" placeholder="Sala Servidores - Rack A1" />
-          </div>
-          <div class="fg">
-            <label>MAC ADDRESS (opcional)</label>
-            <input type="text" [(ngModel)]="form.mac_address" placeholder="00:1A:2B:3C:4D:5E" />
-          </div>
-          <div class="modal-actions">
-            <button class="btn-cancel" (click)="cerrarModal()">CANCELAR</button>
-            <button class="btn-save" (click)="guardar()">{{ modoEdicion() ? 'ACTUALIZAR' : 'CREAR' }}</button>
-          </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-cancel" (click)="cerrarModal()">CANCELAR</button>
+              <button type="submit" class="btn-save">{{ modoEdicion() ? 'ACTUALIZAR' : 'CREAR' }}</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
