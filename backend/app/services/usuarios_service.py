@@ -111,6 +111,43 @@ class UsuariosService:
         if not updates:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay campos para actualizar.")
 
+        # --- Historial de Roles ---
+        # Si el rol está cambiando, registrar la transición con fechas
+        nuevo_rol = updates.get("rol")
+        rol_anterior = usuario.get("rol")
+        if nuevo_rol and nuevo_rol != rol_anterior:
+            ahora = datetime.now(timezone.utc)
+            historial = usuario.get("historial_roles", [])
+
+            # Cerrar la entrada activa anterior (la que tiene 'hasta': None)
+            historial_actualizado = []
+            for entrada in historial:
+                if entrada.get("hasta") is None:
+                    entrada = {**entrada, "hasta": ahora.isoformat()}
+                historial_actualizado.append(entrada)
+
+            # Si no había historial previo, registrar el rol original como primera entrada
+            if not historial_actualizado:
+                created_at = usuario.get("created_at", ahora)
+                if hasattr(created_at, "isoformat"):
+                    created_at = created_at.isoformat()
+                historial_actualizado.append({
+                    "rol": rol_anterior,
+                    "desde": created_at,
+                    "hasta": ahora.isoformat(),
+                    "cambiado_por": current_user_id
+                })
+
+            # Agregar la nueva entrada de rol activo
+            historial_actualizado.append({
+                "rol": nuevo_rol,
+                "desde": ahora.isoformat(),
+                "hasta": None,
+                "cambiado_por": current_user_id
+            })
+
+            updates["historial_roles"] = historial_actualizado
+
         updated_user = UsuariosRepository.update(oid, updates)
         if not updated_user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
