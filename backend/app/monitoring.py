@@ -7,6 +7,11 @@ from bson import ObjectId
 from app.database import dispositivos_col, alertas_col, configuracion_col
 from app.socket import sio
 
+import os
+import random
+
+SIMULATION_MODE = os.getenv("SIMULATION_MODE", "true").lower() == "true"
+
 DEFAULT_UMBRAL_LATENCIA = 200  # ms - valor por defecto si no hay config en BD
 
 def get_umbrales():
@@ -50,8 +55,21 @@ async def verificar_dispositivo(dispositivo):
         UMBRAL_LATENCIA = umbrales["latencia_maxima_ms"]
         con_alerta_recuperacion = umbrales["alerta_recuperacion"]
         
-        loop = asyncio.get_running_loop()
-        alive, latencia = await loop.run_in_executor(None, ping_host, ip)
+        if SIMULATION_MODE:
+            # Simulación inteligente de ping (80% Activo, 12% Degradado, 8% Inactivo)
+            rand = random.random()
+            if rand < 0.80:
+                alive = True
+                latencia = round(random.uniform(10.0, 70.0), 1)
+            elif rand < 0.92:
+                alive = True
+                latencia = round(random.uniform(UMBRAL_LATENCIA + 5, UMBRAL_LATENCIA + 120), 1)
+            else:
+                alive = False
+                latencia = None
+        else:
+            loop = asyncio.get_running_loop()
+            alive, latencia = await loop.run_in_executor(None, ping_host, ip)
         
         nuevo_estado = "activo"
         if not alive:
@@ -110,7 +128,7 @@ async def verificar_dispositivo(dispositivo):
                     "fecha_generacion": datetime.now(timezone.utc),
                     "fecha_reconocimiento": None
                 }
-            elif estado_anterior == "inactivo" and nuevo_estado == "activo" and con_alerta_recuperacion:
+            elif estado_anterior in ["inactivo", "degradado"] and nuevo_estado == "activo" and con_alerta_recuperacion:
                 alerta = {
                     "mensaje": f"Dispositivo {nombre} recuperado. Latencia: {latencia}ms.",
                     "nivel": "informacion",
@@ -136,18 +154,20 @@ async def verificar_dispositivo(dispositivo):
         print(f"Error al verificar {dispositivo.get('nombre')}: {e}")
 
 async def monitorear_ciclo():
-    print("Servicio de monitoreo de red en tiempo real iniciado.")
-    # Ciclo infinito
+    print(f"Servicio de monitoreo de red iniciado. Modo simulación: {SIMULATION_MODE}")
     while True:
         try:
-            dispositivos = list(dispositivos_col.find({"estado": {"$ne": "sin_monitoreo"}}))
+            # Monitorear todos los dispositivos registrados en la base de datos
+            dispositivos = list(dispositivos_col.find())
             tasks = [verificar_dispositivo(d) for d in dispositivos]
             if tasks:
                 await asyncio.gather(*tasks)
         except Exception as e:
             print(f"Error en el ciclo de monitoreo: {e}")
         
-        await asyncio.sleep(60)
+        # En modo simulación acortamos el tiempo a 15s para mayor dinamismo en la demo
+        sleep_time = 15 if SIMULATION_MODE else 60
+        await asyncio.sleep(sleep_time)
 
 def iniciar_monitoreo():
     asyncio.create_task(monitorear_ciclo())
